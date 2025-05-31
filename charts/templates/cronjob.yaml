@@ -42,7 +42,7 @@ spec:
             volumeMounts:
             - name: mc-config-volume
               mountPath: "/root/.mc" # mc default config path
-              readOnly: true
+              readOnly: false
             resources:
               {{- toYaml .Values.resources | nindent 14 }}
           volumes:

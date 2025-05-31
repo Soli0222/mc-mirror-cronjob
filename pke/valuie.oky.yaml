@@ -2,7 +2,7 @@ image:
   repository: minio/mc
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "RELEASE.2025-05-21T01-59-54Z-cpuv1"
 
 imagePullSecrets: []
 nameOverride: ""
