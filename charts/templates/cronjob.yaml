@@ -35,23 +35,29 @@ spec:
             command: ["/bin/sh", "-c"]
             args:
             - |
+              mkdir -p /root/.mc
+              cp /config-from-secret/config.json /root/.mc/config.json
               echo "Starting mc mirror job at $(date) for source {{ .Values.cronjob.mcMirror.source }} to {{ .Values.cronjob.mcMirror.destination }}"
               mc alias list
               mc mirror {{ .Values.cronjob.mcMirror.source }} {{ .Values.cronjob.mcMirror.destination }}
               echo "mc mirror job finished at $(date)"
             volumeMounts:
-            - name: mc-config-volume
-              mountPath: "/root/.mc" # mc default config path
-              readOnly: false
+            - name: mc-home-dir # Mount the writable emptyDir
+              mountPath: "/root/.mc"
+            - name: mc-config-secret-file # Mount the original secret to a temp path
+              mountPath: "/config-from-secret"
+              readOnly: true # Secrets are read-only
             resources:
               {{- toYaml .Values.resources | nindent 14 }}
           volumes:
-          - name: mc-config-volume
+          - name: mc-home-dir # Define the emptyDir for /root/.mc
+            emptyDir: {}
+          - name: mc-config-secret-file # Define the secret volume for config.json
             secret:
               secretName: {{ .Values.cronjob.mcConfigSecretName }}
               items:
               - key: config.json # Assumes the key in the secret is 'config.json'
-                path: config.json
+                path: config.json # This will create /config-from-secret/config.json
           {{- with .Values.nodeSelector }}
           nodeSelector:
             {{- toYaml . | nindent 12 }}
