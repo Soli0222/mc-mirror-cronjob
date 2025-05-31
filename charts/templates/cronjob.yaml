@@ -38,7 +38,6 @@ spec:
               mkdir -p /root/.mc
               cp /config-from-secret/config.json /root/.mc/config.json
               echo "Starting mc mirror job at $(date) for source {{ .Values.cronjob.mcMirror.source }} to {{ .Values.cronjob.mcMirror.destination }}"
-              mc alias list
               mc mirror {{ .Values.cronjob.mcMirror.source }} {{ .Values.cronjob.mcMirror.destination }}
               echo "mc mirror job finished at $(date)"
             volumeMounts:
