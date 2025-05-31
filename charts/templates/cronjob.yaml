@@ -1,0 +1,66 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "mc-mirror-cronjob.fullname" . }}
+  labels:
+    {{- include "mc-mirror-cronjob.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: {{ .Values.cronjob.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "mc-mirror-cronjob.selectorLabels" . | nindent 12 }}
+          {{- with .Values.podAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        spec:
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          serviceAccountName: {{ include "mc-mirror-cronjob.serviceAccountName" . }}
+          securityContext:
+            {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          restartPolicy: {{ .Values.cronjob.restartPolicy }}
+          containers:
+          - name: {{ .Chart.Name }}
+            securityContext:
+              {{- toYaml .Values.securityContext | nindent 14 }}
+            image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}"
+            imagePullPolicy: {{ .Values.image.pullPolicy }}
+            command: ["/bin/sh", "-c"]
+            args:
+            - |
+              echo "Starting mc mirror job at $(date) for source {{ .Values.cronjob.mcMirror.source }} to {{ .Values.cronjob.mcMirror.destination }}"
+              mc alias list
+              mc mirror {{ .Values.cronjob.mcMirror.source }} {{ .Values.cronjob.mcMirror.destination }}
+              echo "mc mirror job finished at $(date)"
+            volumeMounts:
+            - name: mc-config-volume
+              mountPath: "/root/.mc" # mc default config path
+              readOnly: true
+            resources:
+              {{- toYaml .Values.resources | nindent 14 }}
+          volumes:
+          - name: mc-config-volume
+            secret:
+              secretName: {{ .Values.cronjob.mcConfigSecretName }}
+              items:
+              - key: config.json # Assumes the key in the secret is 'config.json'
+                path: config.json
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
